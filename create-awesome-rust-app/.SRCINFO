@@ -1,6 +1,6 @@
 pkgbase = create-awesome-rust-app
 	pkgdesc = Rust-native scaffolding CLI for the Rust programming language (source build)
-	pkgver = 0.1.0
+	pkgver = 0.2.0
 	pkgrel = 1
 	url = https://github.com/Create-Rust-App/create-rust-app
 	arch = x86_64
@@ -13,7 +13,7 @@ pkgbase = create-awesome-rust-app
 	provides = create-awesome-rust-app
 	conflicts = create-awesome-rust-app-bin
 	conflicts = create-rust-app
-	source = create-awesome-rust-app-0.1.0.tar.gz::https://github.com/Create-Rust-App/create-rust-app/archive/refs/tags/create-rust-app@0.1.0.tar.gz
-	sha256sums = fb5dededb99c7fd93b7c1837843cc5ca5b00f28ceb0a05b343f82ec89e415f7c
+	source = create-awesome-rust-app-0.2.0.tar.gz::https://github.com/Create-Rust-App/create-rust-app/archive/refs/tags/create-rust-app@0.2.0.tar.gz
+	sha256sums = 78db3b73edb670b09e13bdb034d428e3add1a4bdd6c976e287d170248bf8e02e
 
 pkgname = create-awesome-rust-app
