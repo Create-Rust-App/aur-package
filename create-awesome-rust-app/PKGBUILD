@@ -11,7 +11,7 @@ makedepends=('rust' 'cargo')
 provides=('create-rust-app' 'create-awesome-rust-app')
 conflicts=('create-awesome-rust-app-bin' 'create-rust-app')
 source=("create-awesome-rust-app-${pkgver}.tar.gz::https://github.com/Create-Rust-App/create-rust-app/archive/refs/tags/create-rust-app@${pkgver}.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('fb5dededb99c7fd93b7c1837843cc5ca5b00f28ceb0a05b343f82ec89e415f7c')
 
 build() {
   cd "create-rust-app-create-rust-app-${pkgver}"
