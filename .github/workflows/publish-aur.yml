@@ -1,0 +1,49 @@
+name: Publish to AUR
+
+# Publishes both PKGBUILDs to aur.archlinux.org whenever they land on main
+# (usually via the scheduled bump PRs), or manually. The
+# ulises-jeremias/github-actions-aur-publish action validates the PKGBUILD,
+# generates .SRCINFO, and pushes to the AUR.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "create-awesome-rust-app/PKGBUILD"
+      - "create-awesome-rust-app-bin/PKGBUILD"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-aur
+  cancel-in-progress: false
+
+jobs:
+  aur:
+    name: Publish ${{ matrix.package }} to AUR
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        package:
+          - create-awesome-rust-app
+          - create-awesome-rust-app-bin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish ${{ matrix.package }}
+        uses: ulises-jeremias/github-actions-aur-publish@v1
+        with:
+          pkgname: ${{ matrix.package }}
+          pkgbuild: ${{ matrix.package }}/PKGBUILD
+          commit_username: "Create Rust App Bot"
+          commit_email: "ulisescf.24@gmail.com"
+          commit_message: "Update AUR package"
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          allow_empty_commits: "false"
+          ssh_keyscan_types: "rsa,ecdsa,ed25519"
