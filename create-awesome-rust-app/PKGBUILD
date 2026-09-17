@@ -1,6 +1,6 @@
 # Maintainer: Ulises Jeremias <ulisescf.24@gmail.com>
 pkgname=create-awesome-rust-app
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="Rust-native scaffolding CLI for the Rust programming language (source build)"
 arch=('x86_64' 'aarch64')
@@ -11,7 +11,7 @@ makedepends=('rust' 'cargo')
 provides=('create-rust-app' 'create-awesome-rust-app')
 conflicts=('create-awesome-rust-app-bin' 'create-rust-app')
 source=("create-awesome-rust-app-${pkgver}.tar.gz::https://github.com/Create-Rust-App/create-rust-app/archive/refs/tags/create-rust-app@${pkgver}.tar.gz")
-sha256sums=('78db3b73edb670b09e13bdb034d428e3add1a4bdd6c976e287d170248bf8e02e')
+sha256sums=('48858ae6d71cf5ec43bc7ba53d251afe32c256118b4e3d56a8289043fe94e55c')
 
 build() {
   cd "create-rust-app-create-rust-app-${pkgver}"
