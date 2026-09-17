@@ -1,0 +1,113 @@
+name: Bump packages
+
+# Keeps both AUR packages tracking upstream without hand-edited checksums:
+# the source package follows the latest `create-rust-app@X.Y.Z` git tag,
+# the `-bin` package follows the latest *published* GitHub Release
+# (draft releases have no stable download URL). Opens a PR when a bump
+# is available; the existing validate workflow proves the result.
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Bump PKGBUILDs to latest upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve upstream versions
+        id: upstream
+        run: |
+          set -euo pipefail
+          TAG_VER=$(git ls-remote --tags https://github.com/Create-Rust-App/create-rust-app 'create-rust-app@*[^^{}]' \
+            | awk -F/ '{print $NF}' | sed 's/^create-rust-app@//' | sort -V | tail -1)
+          echo "latest tag version: $TAG_VER"
+          REL_VER=$(curl -sfL https://api.github.com/repos/Create-Rust-App/create-rust-app/releases/latest \
+            | jq -r '.tag_name | sub("^create-rust-app@"; "")')
+          echo "latest published release version: $REL_VER"
+          echo "tag=$TAG_VER" >> "$GITHUB_OUTPUT"
+          echo "release=$REL_VER" >> "$GITHUB_OUTPUT"
+
+      - name: Bump source package to latest tag
+        id: source
+        run: |
+          set -euo pipefail
+          PKG=create-awesome-rust-app
+          CURRENT=$(grep -E '^pkgver=' "$PKG/PKGBUILD" | cut -d= -f2)
+          TARGET="${{ steps.upstream.outputs.tag }}"
+          if [ "$(printf '%s\n%s' "$CURRENT" "$TARGET" | sort -V | tail -1)" = "$CURRENT" ]; then
+            echo "source package already at $CURRENT; nothing to do"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          TARBALL_URL="https://github.com/Create-Rust-App/create-rust-app/archive/refs/tags/create-rust-app@${TARGET}.tar.gz"
+          SHA=$(curl -sfL "$TARBALL_URL" | sha256sum | cut -d' ' -f1)
+          echo "bumping $PKG $CURRENT -> $TARGET (sha256 $SHA)"
+          sed -i "s/^pkgver=.*/pkgver=$TARGET/" "$PKG/PKGBUILD"
+          sed -i "s/^sha256sums=.*/sha256sums=('$SHA')/" "$PKG/PKGBUILD"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Bump -bin package to latest published release
+        id: binpkg
+        run: |
+          set -euo pipefail
+          PKG=create-awesome-rust-app-bin
+          CURRENT=$(grep -E '^pkgver=' "$PKG/PKGBUILD" | cut -d= -f2)
+          TARGET="${{ steps.upstream.outputs.release }}"
+          if [ "$(printf '%s\n%s' "$CURRENT" "$TARGET" | sort -V | tail -1)" = "$CURRENT" ]; then
+            echo "-bin package already at $CURRENT; nothing to do"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          SHA=$(curl -sfL "https://github.com/Create-Rust-App/create-rust-app/releases/download/create-rust-app@${TARGET}/SHA256SUMS" \
+            | awk '/create-rust-app-linux-x86_64$/ {print $1}')
+          test -n "$SHA" || { echo "::error::no linux-x86_64 checksum in $TARGET SHA256SUMS"; exit 1; }
+          echo "bumping $PKG $CURRENT -> $TARGET (sha256 $SHA)"
+          sed -i "s/^pkgver=.*/pkgver=$TARGET/" "$PKG/PKGBUILD"
+          sed -i "s/^sha256sums=.*/sha256sums=('$SHA')/" "$PKG/PKGBUILD"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Regenerate .SRCINFO files
+        if: steps.source.outputs.changed == 'true' || steps.binpkg.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          for pkg in create-awesome-rust-app create-awesome-rust-app-bin; do
+            docker run --rm \
+              -v "$PWD:/work:rw" \
+              -w "/work/$pkg" \
+              archlinux:latest \
+              bash -euo pipefail -c '
+                pacman -Sy --noconfirm --needed pacman-contrib base-devel >/dev/null 2>&1
+                useradd -m builder
+                chown -R builder:builder /work
+                runuser -u builder -- makepkg --printsrcinfo > /tmp/.SRCINFO.generated
+                cat /tmp/.SRCINFO.generated > .SRCINFO
+              '
+            echo "regenerated $pkg/.SRCINFO"
+          done
+
+      - name: Open bump PR
+        if: steps.source.outputs.changed == 'true' || steps.binpkg.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="chore/bump-$(date +%Y%m%d-%H%M)"
+          git checkout -b "$BRANCH"
+          git add create-awesome-rust-app/PKGBUILD create-awesome-rust-app/.SRCINFO \
+            create-awesome-rust-app-bin/PKGBUILD create-awesome-rust-app-bin/.SRCINFO
+          git commit -m "chore(aur): bump packages to latest upstream" \
+            -m "Automated bump: source tracks the latest create-rust-app@ tag, -bin tracks the latest published release."
+          git push -u origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore(aur): bump packages to latest upstream" \
+            --body "Automated packaging bump from the scheduled bump workflow. Checksums verified against the upstream tag tarball and release SHA256SUMS; .SRCINFO regenerated with makepkg."
