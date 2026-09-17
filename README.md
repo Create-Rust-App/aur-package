@@ -9,11 +9,11 @@ GitHub mirror of the AUR packages:
 
 Both provide `create-rust-app` / `create-awesome-rust-app` and conflict with each other.
 
-> **Pre-release note:** the `create-rust-app` CLI has not published a release
-> yet. `pkgver` is pinned to the `0.1.0` placeholder and `sha256sums` is
-> `SKIP` until the first `create-rust-app@X.Y.Z` GitHub Release lands, at
-> which point the checksums must be synced (see below). Do not submit these
-> packages to the AUR until the checksums point at a real release.
+> **Version policy:** the source package tracks the latest `create-rust-app@X.Y.Z`
+> git tag; the `-bin` package tracks the latest *published* GitHub Release
+> (draft releases have no stable download URL, so `-bin` lags tags until the
+> release is published). Both `pkgver` values and checksums are verified
+> against the upstream tag tarball and release `SHA256SUMS` on every bump.
 
 ## Install
 
