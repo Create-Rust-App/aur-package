@@ -65,7 +65,11 @@ When a new version lands as a GitHub Release:
 
 ## Publishing to the AUR (maintainers)
 
-Each subdirectory is pushed to its own AUR package. SSH is configured via
+Pushes to `main` that touch a `PKGBUILD` are published automatically by
+[`publish-aur.yml`](.github/workflows/publish-aur.yml), using
+[`ulises-jeremias/github-actions-aur-publish`](https://github.com/ulises-jeremias/github-actions-aur-publish)
+(requires the `AUR_SSH_PRIVATE_KEY` secret). Manual fallback — each
+subdirectory is pushed to its own AUR package, with SSH configured via
 the `aur` host (`~/.ssh/config` → `aur.archlinux.org`):
 
 ```bash
