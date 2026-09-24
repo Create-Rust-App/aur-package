@@ -34,7 +34,7 @@ jobs:
           - create-awesome-rust-app
           - create-awesome-rust-app-bin
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Publish ${{ matrix.package }}
         uses: ulises-jeremias/github-actions-aur-publish@v1
