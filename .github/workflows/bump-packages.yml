@@ -80,6 +80,7 @@ jobs:
           set -euo pipefail
           for pkg in create-awesome-rust-app create-awesome-rust-app-bin; do
             docker run --rm \
+              -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
               -v "$PWD:/work:rw" \
               -w "/work/$pkg" \
               archlinux:latest \
@@ -89,6 +90,9 @@ jobs:
                 chown -R builder:builder /work
                 runuser -u builder -- makepkg --printsrcinfo > /tmp/.SRCINFO.generated
                 cat /tmp/.SRCINFO.generated > .SRCINFO
+                # Hand the checkout back to the runner user; otherwise the
+                # next step cannot write .git/config.
+                chown -R "$HOST_UID:$HOST_GID" /work
               '
             echo "regenerated $pkg/.SRCINFO"
           done
